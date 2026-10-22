@@ -668,6 +668,7 @@ body {
 let state = {
   entries: [],
   scriptUrl: '',
+  sheetConnected: false,
   pin: '',
   editingId: null,
   pendingAction: null,
@@ -711,9 +712,10 @@ function loadLocal() {
 function saveSettings() {
   const url = document.getElementById('scriptUrl').value.trim();
   state.scriptUrl = url;
+  state.sheetConnected = false;
   localStorage.setItem('barakah_scriptUrl', url);
-  toast('✓ সেটিংস সেভ হয়েছে');
   updateSyncStatus();
+  refreshData();
 }
 function savePin() {
   const pin = document.getElementById('securityPin').value.trim();
@@ -731,12 +733,12 @@ function loadSettings() {
 function updateSyncStatus() {
   const dot = document.getElementById('syncDot');
   const txt = document.getElementById('syncText');
-  if (state.scriptUrl) {
+  if (state.scriptUrl && state.sheetConnected) {
     dot.classList.remove('offline');
     txt.textContent = 'সিনকড';
   } else {
     dot.classList.add('offline');
-    txt.textContent = 'অফলাইন';
+    txt.textContent = state.scriptUrl ? 'সংযোগ নেই' : 'অফলাইন';
   }
 }
 
@@ -760,12 +762,94 @@ async function syncToSheet(action, data) {
   }
 }
 
-async function refreshData() {
-  toast('🔄 রিফ্রেশ হচ্ছে...');
-  // For simplicity, we keep local as primary and sync to sheet
-  // If sheet is source of truth, implement doGet in Apps Script
-  await syncToSheet('refresh', {});
-  toast('✓ রিফ্রেশ সম্পন্ন');
+function loadEntriesFromSheet(scriptUrl=state.scriptUrl) {
+  return new Promise((resolve, reject) => {
+    let requestUrl;
+    try {
+      requestUrl = new URL(scriptUrl);
+      requestUrl.searchParams.set('action', 'load');
+    } catch (error) {
+      reject(new Error('Apps Script URL সঠিক নয়'));
+      return;
+    }
+
+    const callbackName = 'barakahLoad_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    let settled = false;
+    const timeout = setTimeout(() => {
+      settled = true;
+      cleanup();
+      reject(new Error('Apps Script থেকে ডেটা আসতে দেরি হচ্ছে'));
+    }, 15000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      script.remove();
+      delete window[callbackName];
+    }
+
+    window[callbackName] = result => {
+      settled = true;
+      cleanup();
+      if (!result || result.ok !== true || !Array.isArray(result.entries)) {
+        reject(new Error(result && result.error ? result.error : 'Apps Script-এ load endpoint নেই; Code.gs আপডেট করে redeploy করুন'));
+        return;
+      }
+      resolve(result.entries);
+    };
+
+    script.onerror = () => {
+      settled = true;
+      cleanup();
+      reject(new Error('Apps Script JSONP ডেটা দেয়নি; code.gs আপডেট করে নতুন version deploy করুন'));
+    };
+    script.onload = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('Apps Script-এ load endpoint নেই; Code.gs আপডেট করে redeploy করুন'));
+    };
+    requestUrl.searchParams.set('callback', callbackName);
+    script.src = requestUrl.toString();
+    document.head.appendChild(script);
+  });
+}
+
+async function refreshData(silent=false) {
+  if (!state.scriptUrl) {
+    state.sheetConnected = false;
+    updateSyncStatus();
+    toast('⚠️ আগে Settings-এ Apps Script URL দিন');
+    return;
+  }
+  if (!silent) toast('🔄 শীট থেকে ডেটা লোড হচ্ছে...');
+  try {
+    const sheetEntries = await loadEntriesFromSheet();
+    const entriesById = new Map();
+    sheetEntries.forEach(entry => {
+      if (!entry || entry.id == null || String(entry.id) === '') {
+        throw new Error('শীটের কোনো এন্ট্রিতে ID নেই');
+      }
+      entriesById.set(String(entry.id), { ...entry, id:String(entry.id) });
+    });
+
+    // Keep local-only entries so a refresh cannot discard entries not yet in the sheet.
+    state.entries.forEach(entry => {
+      if (!entriesById.has(String(entry.id))) entriesById.set(String(entry.id), entry);
+    });
+    state.entries = Array.from(entriesById.values());
+    state.sheetConnected = true;
+    saveLocal();
+    updateStats();
+    renderEntries();
+    updateSyncStatus();
+    toast(`✓ শীট থেকে ${toBn(sheetEntries.length)} টি এন্ট্রি লোড হয়েছে`);
+  } catch (error) {
+    state.sheetConnected = false;
+    updateSyncStatus();
+    console.error('Google Sheet load failed:', error);
+    toast('❌ শীট থেকে ডেটা লোড হয়নি: ' + error.message, 5000);
+  }
 }
 
 // ============ ENTRY MANAGEMENT ============
@@ -1205,14 +1289,17 @@ async function testConnection() {
   if (!url) { toast('⚠️ URL দিন'); return; }
   toast('🧪 টেস্ট হচ্ছে...');
   try {
-    await fetch(url, {
-      method:'POST',
-      mode:'no-cors',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action:'test', data:{}, timestamp:Date.now() })
-    });
-    toast('✓ সংযোগ সফল (no-cors মোড)');
-  } catch(e) {
+    const entries = await loadEntriesFromSheet(url);
+    if (state.scriptUrl === url) {
+      state.sheetConnected = true;
+      updateSyncStatus();
+    }
+    toast(`✓ সংযোগ সফল; ${toBn(entries.length)} টি এন্ট্রি পাওয়া গেছে`);
+  } catch (e) {
+    if (state.scriptUrl === url) {
+      state.sheetConnected = false;
+      updateSyncStatus();
+    }
     toast('❌ সংযোগ ব্যর্থ: ' + e.message);
   }
 }
@@ -1256,12 +1343,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateSyncStatus();
   setTodayDate();
   setupSuggestions();
-  
-  // Queue pending syncs
-  if (state.scriptUrl && state.entries.length > 0) {
-    // Sync all entries on startup (idempotent)
-    console.log('Local entries loaded:', state.entries.length);
-  }
+  if (state.scriptUrl) refreshData(true);
 });
 </script>
 </body>
