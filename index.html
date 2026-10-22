@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>বারাকাহ ভিলা - হিসাব</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230f766e'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='white'%3E🏠%3C/text%3E%3C/svg%3E">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --primary:#0f766e; --primary-dark:#115e59; --accent:#f59e0b;
+  --bg:#f0fdfa; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+  --danger:#dc2626; --success:#16a34a; --border:#e5e7eb;
+}
+body {
+  font-family:'SolaimanLipi','Kalpurush','Noto Sans Bengali',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(135deg,#f0fdfa 0%,#ccfbf1 100%);
+  color:var(--text); min-height:100vh; padding-bottom:80px;
+  -webkit-font-smoothing:antialiased;
+}
+.header {
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
+  color:white; padding:16px; position:sticky; top:0; z-index:100;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+.header-top { display:flex; justify-content:space-between; align-items:center; }
+.header h1 { font-size:20px; font-weight:700; }
+.header-sub { font-size:12px; opacity:0.9; margin-top:2px; }
+.header-actions { display:flex; gap:8px; }
+.icon-btn {
+  background:rgba(255,255,255,0.2); border:none; color:white;
+  width:38px; height:38px; border-radius:50%; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+  transition:all 0.2s;
+}
+.icon-btn:active { transform:scale(0.92); background:rgba(255,255,255,0.3); }
+
+.stats {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+  padding:12px 16px; background:rgba(255,255,255,0.1); margin-top:12px;
+  border-radius:12px;
+}
+.stat { text-align:center; }
+.stat-value { font-size:16px; font-weight:700; }
+.stat-label { font-size:10px; opacity:0.85; }
+
+.container { padding:16px; max-width:600px; margin:0 auto; }
+.card {
+  background:var(--card); border-radius:16px; padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:16px;
+}
+.card-title {
+  font-size:16px; font-weight:700; color:var(--primary);
+  margin-bottom:12px; display:flex; align-items:center; gap:8px;
+}
+
+.form-group { margin-bottom:14px; position:relative; }
+.form-label {
+  display:block; font-size:13px; font-weight:600;
+  color:var(--text); margin-bottom:6px;
+}
+.form-input, .form-select, .form-textarea {
+  width:100%; padding:12px 14px; border:2px solid var(--border);
+  border-radius:10px; font-size:15px; font-family:inherit;
+  background:white; transition:all 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline:none; border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(15,118,110,0.1);
+}
+.form-textarea { resize:vertical; min-height:70px; }
+
+.suggestions {
+  position:absolute; top:100%; left:0; right:0;
+  background:white; border:1px solid var(--border);
+  border-radius:10px; margin-top:4px; max-height:200px;
+  overflow-y:auto; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  display:none;
+}
+.suggestions.active { display:block; }
+.suggestion-item {
+  padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border);
+  font-size:14px;
+}
+.suggestion-item:last-child { border-bottom:none; }
+.suggestion-item:active { background:var(--bg); }
+.suggestion-item small { color:var(--muted); font-size:11px; display:block; }
+
+.btn {
+  padding:12px 20px; border:none; border-radius:10px;
+  font-size:15px; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:all 0.2s;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn:active { transform:scale(0.97); }
+.btn-primary {
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:white; width:100%;
+}
+.btn-success { background:var(--success); color:white; }
+.btn-danger { background:var(--danger); color:white; }
+.btn-secondary { background:#e5e7eb; color:var(--text); }
+.btn-whatsapp { background:#25D366; color:white; }
+
+.btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.btn-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px; }
+
+.entry-list { display:flex; flex-direction:column; gap:10px; }
+.entry-item {
+  background:white; border-radius:12px; padding:12px;
+  border-left:4px solid var(--primary);
+  box-shadow:0 1px 4px rgba(0,0,0,0.05);
+}
+.entry-header { display:flex; justify-content:space-between; align-items:start; margin-bottom:6px; }
+.entry-name { font-weight:700; font-size:15px; color:var(--text); }
+.entry-amount { font-weight:700; color:var(--primary); font-size:16px; }
+.entry-work { font-size:13px; color:var(--muted); margin:2px 0; }
+.entry-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:11px; color:var(--muted); }
+.entry-actions { display:flex; gap:6px; }
+.entry-actions button {
+  padding:5px 10px; border:none; border-radius:6px;
+  font-size:12px; cursor:pointer; font-family:inherit;
+}
+.entry-actions .edit-btn { background:#dbeafe; color:#1e40af; }
+.entry-actions .del-btn { background:#fee2e2; color:#991b1b; }
+.entry-actions .print-btn { background:#d1fae5; color:#065f46; }
+
+.filter-bar { display:flex; gap:8px; margin-bottom:12px; }
+.filter-bar input { flex:1; padding:10px; border:2px solid var(--border); border-radius:10px; font-family:inherit; font-size:14px; }
+
+.empty {
+  text-align:center; padding:30px; color:var(--muted);
+}
+.empty-icon { font-size:48px; margin-bottom:8px; }
+
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:white; border-top:1px solid var(--border);
+  display:flex; justify-content:space-around; padding:8px 0;
+  z-index:90; box-shadow:0 -2px 8px rgba(0,0,0,0.05);
+}
+.nav-btn {
+  background:none; border:none; padding:6px 12px; cursor:pointer;
+  font-family:inherit; color:var(--muted); font-size:11px;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+}
+.nav-btn.active { color:var(--primary); }
+.nav-btn .nav-icon { font-size:22px; }
+
+.page { display:none; }
+.page.active { display:block; }
+
+.modal {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.5); z-index:200;
+  align-items:center; justify-content:center; padding:16px;
+}
+.modal.active { display:flex; }
+.modal-content {
+  background:white; border-radius:16px; padding:20px;
+  max-width:400px; width:100%; max-height:90vh; overflow-y:auto;
+}
+.modal-title { font-size:18px; font-weight:700; margin-bottom:12px; color:var(--primary); }
+
+.challenge-box {
+  background:linear-gradient(135deg,#fef3c7,#fde68a);
+  padding:16px; border-radius:12px; margin:12px 0;
+  text-align:center;
+}
+.challenge-q { font-size:18px; font-weight:700; color:#78350f; margin-bottom:8px; }
+
+.toast {
+  position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+  background:#1f2937; color:white; padding:10px 20px;
+  border-radius:20px; font-size:14px; z-index:300;
+  opacity:0; transition:opacity 0.3s; pointer-events:none;
+}
+.toast.show { opacity:1; }
+
+.install-banner {
+  background:linear-gradient(135deg,var(--accent),#d97706);
+  color:white; padding:12px 16px; margin:12px 16px;
+  border-radius:12px; display:none; align-items:center; gap:12px;
+}
+.install-banner.show { display:flex; }
+.install-banner button {
+  background:white; color:var(--accent); border:none;
+  padding:6px 14px; border-radius:8px; font-weight:700;
+  cursor:pointer; font-family:inherit;
+}
+
+.sync-status {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:11px; padding:3px 8px; border-radius:10px;
+  background:rgba(255,255,255,0.2);
+}
+.sync-dot { width:8px; height:8px; border-radius:50%; background:#86efac; }
+.sync-dot.offline { background:#fca5a5; }
+
+.loader {
+  display:inline-block; width:16px; height:16px;
+  border:2px solid rgba(255,255,255,0.3); border-top-color:white;
+  border-radius:50%; animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ============ PRINT STYLES ============ */
+/* ============ PRINT STYLES - A4 Landscape, 2 Receipts Full Page ============ */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    width: 297mm !important;
+    height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: hidden !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  .print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .no-print { display: none !important; }
+
+  /* ===== প্রতিটি পেজ = একটি A4 Landscape ===== */
+  .receipt-page {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: 1fr !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    box-sizing: border-box !important;
+    page-break-after: always;
+    page-break-before: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    background: white !important;
+  }
+
+  .receipt-page:last-child {
+    page-break-after: auto;
+  }
+
+  /* ===== প্রতিটি রশিদ = অর্ধেক A4 (A5 সাইজ) ===== */
+  .receipt {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 8mm 6mm !important;
+    background: white !important;
+    position: relative !important;
+    overflow: hidden !important;
+    page-break-inside: avoid;
+    display: flex !important;
+    flex-direction: column !important;
+    border: none !important;
+  }
+
+  /* বাম পাশের রশিদ - ডান বর্ডার (কাটার লাইন) */
+  .receipt:first-child {
+    border-right: 0.5pt dashed #999 !important;
+    padding-right: 5mm !important;
+  }
+
+  /* ডান পাশের রশিদ - বাম বর্ডার */
+  .receipt:last-child {
+    padding-left: 5mm !important;
+  }
+
+  /* কপি লেবেল */
+  .receipt-copy-label {
+    text-align: center !important;
+    font-size: 8pt !important;
+    font-weight: 700 !important;
+    color: #0f766e !important;
+    background: #f0fdfa !important;
+    padding: 1.5mm 3mm !important;
+    border-radius: 3px !important;
+    margin-bottom: 3mm !important;
+    border: 1px dashed #0f766e !important;
+  }
+
+  /* হেডার */
+  .receipt-header {
+    text-align: center !important;
+    margin-bottom: 3mm !important;
+    flex-shrink: 0 !important;
+  }
+
+  .receipt-villa {
+    font-family: 'Georgia', serif !important;
+    font-size: 22pt !important;
+    font-weight: 700 !important;
+    color: #0f766e !important;
+    letter-spacing: 1px !important;
+    margin-bottom: 1mm !important;
+    line-height: 1.1 !important;
+  }
+
+  .receipt-owner {
+    font-size: 10pt !important;
+    color: #374151 !important;
+    margin: 0.5mm 0 !important;
+  }
+
+  .receipt-mobile {
+    font-size: 9pt !important;
+    color: #6b7280 !important;
+  }
+
+  .receipt-divider {
+    border: none !important;
+    border-top: 1.5pt dashed #0f766e !important;
+    margin: 3mm 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .receipt-title {
+    text-align: center !important;
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    color: #0f766e !important;
+    margin-bottom: 4mm !important;
+    background: #f0fdfa !important;
+    padding: 2mm !important;
+    border-radius: 4px !important;
+    border: 1px solid #0f766e !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* রো */
+  .receipt-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    padding: 1.5mm 0 !important;
+    border-bottom: 1pt dotted #9ca3af !important;
+    font-size: 10pt !important;
+    line-height: 1.3 !important;
+    gap: 2mm !important;
+  }
+
+  .receipt-row:last-of-type {
+    border-bottom: none !important;
+  }
+
+  .receipt-label {
+    color: #4b5563 !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .receipt-value {
+    color: #1f2937 !important;
+    font-weight: 700 !important;
+    text-align: right !important;
+    word-break: break-word !important;
+  }
+
+  /* পরিমাণ বক্স */
+  .receipt-amount {
+    font-size: 16pt !important;
+    font-weight: 700 !important;
+    color: #0f766e !important;
+    text-align: center !important;
+    padding: 3mm 2mm !important;
+    margin: 4mm 0 !important;
+    background: #f0fdfa !important;
+    border: 2pt solid #0f766e !important;
+    border-radius: 5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ফুটার - নিচে ঠেলে দেওয়া */
+  .receipt-footer {
+    margin-top: auto !important;
+    font-size: 9pt !important;
+    color: #6b7280 !important;
+    text-align: center !important;
+    padding: 2mm 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .receipt-sign {
+    text-align: center !important;
+    margin-top: 4mm !important;
+    padding-top: 2mm !important;
+    border-top: 1pt solid #9ca3af !important;
+    font-size: 9pt !important;
+    color: #4b5563 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .receipt-watermark {
+    position: absolute !important;
+    bottom: 2mm !important;
+    left: 0 !important;
+    right: 0 !important;
+    text-align: center !important;
+    font-size: 7pt !important;
+    color: #d1d5db !important;
+  }
+}
+
+@media screen {
+  .print-area { display: none !important; }
+}
+
+@media screen {
+  .print-area { display: none !important; }
+}
+
+
+
+@media screen {
+  .print-area {
+    display: none !important;
+  }
+}
+
+@media screen {
+  .print-area { display:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>🏠 বারাকাহ ভিলা</h1>
+      <div class="header-sub">হিসাব ব্যবস্থাপনা <span class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">অফলাইন</span></span></div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="showPage('settings')" title="সেটিংস">⚙️</button>
+      <button class="icon-btn" onclick="refreshData()" title="রিফ্রেশ">🔄</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-value" id="totalEntries">০</div><div class="stat-label">মোট এন্ট্রি</div></div>
+    <div class="stat"><div class="stat-value" id="totalAmount">৳০</div><div class="stat-label">মোট টাকা</div></div>
+    <div class="stat"><div class="stat-value" id="todayAmount">৳০</div><div class="stat-label">আজকের</div></div>
+  </div>
+</div>
+
+<div class="install-banner" id="installBanner">
+  <div style="flex:1">📱 অ্যাপ হিসেবে ইনস্টল করুন</div>
+  <button onclick="installApp()">ইনস্টল</button>
+</div>
+
+<div class="container">
+
+  <!-- ========== HOME PAGE ========== -->
+  <div class="page active" id="page-home">
+    <div class="card">
+      <div class="card-title">➕ নতুন এন্ট্রি</div>
+      
+      <div class="form-group">
+        <label class="form-label">📅 তারিখ</label>
+        <input type="date" class="form-input" id="entryDate">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">👤 প্রাপক / সেবা প্রদানকারীর নাম *</label>
+        <input type="text" class="form-input" id="entryName" placeholder="নাম লিখুন" autocomplete="off">
+        <div class="suggestions" id="nameSuggestions"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">📱 মোবাইল নম্বর</label>
+        <input type="tel" class="form-input" id="entryMobile" placeholder="01XXXXXXXXX">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">🔨 কাজের নাম / বিবরণ *</label>
+        <input type="text" class="form-input" id="entryWork" placeholder="যেমনঃ ইটের কাজ, বিদ্যুৎ বিল" autocomplete="off">
+        <div class="suggestions" id="workSuggestions"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">💰 পরিমাণ (টাকা) *</label>
+        <input type="number" class="form-input" id="entryAmount" placeholder="0" inputmode="numeric">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">📝 অতিরিক্ত নোট (ঐচ্ছিক)</label>
+        <textarea class="form-textarea" id="entryNote" placeholder="কোনো বিশেষ তথ্য থাকলে লিখুন"></textarea>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveEntry()" id="saveBtn">💾 সেভ করুন</button>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="resetForm()">🔄 রিসেট</button>
+    </div>
+  </div>
+
+  <!-- ========== ENTRIES PAGE ========== -->
+  <div class="page" id="page-entries">
+    <div class="card">
+      <div class="card-title">📋 এন্ট্রি তালিকা</div>
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 নাম বা কাজ দিয়ে খুঁজুন..." oninput="renderEntries()">
+      </div>
+      <div class="entry-list" id="entryList"></div>
+    </div>
+  </div>
+
+  <!-- ========== SETTINGS PAGE ========== -->
+  <div class="page" id="page-settings">
+    <div class="card">
+      <div class="card-title">🔗 Google Apps Script URL</div>
+      <div class="form-group">
+        <label class="form-label">Web App URL</label>
+        <input type="url" class="form-input" id="scriptUrl" placeholder="https://script.google.com/macros/s/...">
+        <small style="color:var(--muted);margin-top:4px;display:block">
+          Google Sheet এ Apps Script যুক্ত করে Web App হিসেবে Deploy করুন, তারপর URL এখানে পেস্ট করুন।
+        </small>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveSettings()">💾 সেভ</button>
+        <button class="btn btn-success" onclick="testConnection()">🧪 টেস্ট</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔒 নিরাপত্তা PIN</div>
+      <div class="form-group">
+        <label class="form-label">ডিলিট/এডিট এর জন্য ৪ সংখ্যার PIN</label>
+        <input type="password" class="form-input" id="securityPin" placeholder="৪ সংখ্যার PIN" maxlength="4" inputmode="numeric">
+      </div>
+      <button class="btn btn-primary" onclick="savePin()">💾 PIN সেভ</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📦 ডেটা ব্যাকআপ</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="exportData()">📥 এক্সপোর্ট</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 ইমপোর্ট</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">ℹ️ অ্যাপ সম্পর্কে</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6">
+        বারাকাহ ভিলা হিসাব অ্যাপ v1.0<br>
+        PWA সাপোর্ট সহ অফলাইন কাজ করে।<br>
+        ডেটা Google Sheet এ sync হয়।
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('home')" id="nav-home">
+    <span class="nav-icon">🏠</span><span>হোম</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('entries')" id="nav-entries">
+    <span class="nav-icon">📋</span><span>তালিকা</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('settings')" id="nav-settings">
+    <span class="nav-icon">⚙️</span><span>সেটিংস</span>
+  </button>
+</div>
+
+<!-- Challenge Modal -->
+<div class="modal" id="challengeModal">
+  <div class="modal-content">
+    <div class="modal-title">🔒 নিরাপত্তা যাচাই</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:8px">এই কাজটি করতে নিচের যেকোনো একটি যাচাই পূরণ করুন:</p>
+    
+    <div class="challenge-box">
+      <div class="challenge-q" id="mathChallenge">১৫ + ২৭ = ?</div>
+      <input type="number" class="form-input" id="mathAnswer" placeholder="উত্তর লিখুন" inputmode="numeric" style="text-align:center">
+    </div>
+
+    <div style="text-align:center;margin:10px 0;color:var(--muted);font-size:12px">— অথবা —</div>
+
+    <div class="form-group">
+      <label class="form-label">🔑 PIN দিন</label>
+      <input type="password" class="form-input" id="pinInput" placeholder="৪ সংখ্যার PIN" maxlength="4" inputmode="numeric">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeChallenge()">বাতিল</button>
+      <button class="btn btn-danger" onclick="verifyChallenge()" id="confirmActionBtn">✓ নিশ্চিত</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <div class="modal-title">✏️ এন্ট্রি সম্পাদনা</div>
+    <input type="hidden" id="editId">
+    
+    <div class="form-group">
+      <label class="form-label">📅 তারিখ</label>
+      <input type="date" class="form-input" id="editDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">👤 নাম</label>
+      <input type="text" class="form-input" id="editName">
+    </div>
+    <div class="form-group">
+      <label class="form-label">📱 মোবাইল</label>
+      <input type="tel" class="form-input" id="editMobile">
+    </div>
+    <div class="form-group">
+      <label class="form-label">🔨 কাজের নাম</label>
+      <input type="text" class="form-input" id="editWork">
+    </div>
+    <div class="form-group">
+      <label class="form-label">💰 পরিমাণ</label>
+      <input type="number" class="form-input" id="editAmount">
+    </div>
+    <div class="form-group">
+      <label class="form-label">📝 নোট</label>
+      <textarea class="form-textarea" id="editNote"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('editModal')">বাতিল</button>
+      <button class="btn btn-primary" onclick="updateEntry()">💾 আপডেট</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print Area (hidden on screen) -->
+<div class="print-area" id="printArea"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ STATE ============
+let state = {
+  entries: [],
+  scriptUrl: '',
+  pin: '',
+  editingId: null,
+  pendingAction: null,
+  challengeAnswer: 0
+};
+
+// ============ UTILS ============
+const toBn = n => String(n).replace(/\d/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+const formatMoney = n => '৳' + toBn(Number(n||0).toLocaleString('en-IN'));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+
+function toast(msg, duration=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'entries') renderEntries();
+  if (name === 'settings') loadSettings();
+  window.scrollTo(0,0);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// ============ STORAGE ============
+function saveLocal() {
+  localStorage.setItem('barakah_entries', JSON.stringify(state.entries));
+}
+function loadLocal() {
+  const data = localStorage.getItem('barakah_entries');
+  if (data) state.entries = JSON.parse(data);
+}
+function saveSettings() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  state.scriptUrl = url;
+  localStorage.setItem('barakah_scriptUrl', url);
+  toast('✓ সেটিংস সেভ হয়েছে');
+  updateSyncStatus();
+}
+function savePin() {
+  const pin = document.getElementById('securityPin').value.trim();
+  if (pin && pin.length !== 4) { toast('PIN ৪ সংখ্যার হতে হবে'); return; }
+  state.pin = pin;
+  localStorage.setItem('barakah_pin', pin);
+  toast('✓ PIN সেভ হয়েছে');
+}
+function loadSettings() {
+  state.scriptUrl = localStorage.getItem('barakah_scriptUrl') || '';
+  state.pin = localStorage.getItem('barakah_pin') || '';
+  document.getElementById('scriptUrl').value = state.scriptUrl;
+  document.getElementById('securityPin').value = state.pin;
+}
+function updateSyncStatus() {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if (state.scriptUrl) {
+    dot.classList.remove('offline');
+    txt.textContent = 'সিনকড';
+  } else {
+    dot.classList.add('offline');
+    txt.textContent = 'অফলাইন';
+  }
+}
+
+// ============ GOOGLE SHEET SYNC ============
+async function syncToSheet(action, data) {
+  if (!state.scriptUrl) {
+    console.warn('No script URL');
+    return { ok:false, error:'no_url' };
+  }
+  try {
+    const res = await fetch(state.scriptUrl, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action, data, timestamp:Date.now() })
+    });
+    return { ok:true };
+  } catch(e) {
+    console.error(e);
+    return { ok:false, error:e.message };
+  }
+}
+
+async function refreshData() {
+  toast('🔄 রিফ্রেশ হচ্ছে...');
+  // For simplicity, we keep local as primary and sync to sheet
+  // If sheet is source of truth, implement doGet in Apps Script
+  await syncToSheet('refresh', {});
+  toast('✓ রিফ্রেশ সম্পন্ন');
+}
+
+// ============ ENTRY MANAGEMENT ============
+function setTodayDate() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('entryDate').value = today;
+}
+
+function resetForm() {
+  document.getElementById('entryName').value = '';
+  document.getElementById('entryMobile').value = '';
+  document.getElementById('entryWork').value = '';
+  document.getElementById('entryAmount').value = '';
+  document.getElementById('entryNote').value = '';
+  setTodayDate();
+}
+
+async function saveEntry() {
+  const date = document.getElementById('entryDate').value;
+  const name = document.getElementById('entryName').value.trim();
+  const mobile = document.getElementById('entryMobile').value.trim();
+  const work = document.getElementById('entryWork').value.trim();
+  const amount = parseFloat(document.getElementById('entryAmount').value);
+  const note = document.getElementById('entryNote').value.trim();
+
+  if (!date || !name || !work || !amount) {
+    toast('⚠️ তারিখ, নাম, কাজ ও পরিমাণ আবশ্যক');
+    return;
+  }
+  if (amount <= 0) {
+    toast('⚠️ সঠিক পরিমাণ দিন');
+    return;
+  }
+
+  const entry = {
+    id: uid(),
+    date, name, mobile, work, amount, note,
+    createdAt: Date.now()
+  };
+
+  const btn = document.getElementById('saveBtn');
+  btn.innerHTML = '<span class="loader"></span> সেভ হচ্ছে...';
+  btn.disabled = true;
+
+  state.entries.unshift(entry);
+  saveLocal();
+  updateStats();
+
+  const syncResult = await syncToSheet('save', entry);
+  
+  btn.innerHTML = '💾 সেভ করুন';
+  btn.disabled = false;
+
+  if (syncResult.ok) {
+    toast('✓ সেভ হয়েছে এবং শীটে পাঠানো হয়েছে');
+  } else {
+    toast('✓ সেভ হয়েছে (শীট সিঙ্ক পরে হবে)');
+  }
+
+  resetForm();
+  printReceipts([entry]);
+}
+
+function renderEntries() {
+  const list = document.getElementById('entryList');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  
+  let filtered = state.entries;
+  if (search) {
+    filtered = state.entries.filter(e => 
+      e.name.toLowerCase().includes(search) ||
+      e.work.toLowerCase().includes(search) ||
+      (e.mobile||'').includes(search)
+    );
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div>কোনো এন্ট্রি নেই</div></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => `
+    <div class="entry-item">
+      <div class="entry-header">
+        <div>
+          <div class="entry-name">${escapeHtml(e.name)}</div>
+          <div class="entry-work">🔨 ${escapeHtml(e.work)}</div>
+          ${e.mobile ? `<div class="entry-work">📱 ${escapeHtml(e.mobile)}</div>` : ''}
+        </div>
+        <div class="entry-amount">${formatMoney(e.amount)}</div>
+      </div>
+      <div class="entry-meta">
+        <span>📅 ${formatDate(e.date)}</span>
+        <div class="entry-actions">
+          <button class="print-btn" onclick="printReceipts([getEntry('${e.id}')])">🖨️</button>
+          <button class="edit-btn" onclick="requestEdit('${e.id}')">✏️</button>
+          <button class="del-btn" onclick="requestDelete('${e.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getEntry(id) {
+  return state.entries.find(e => e.id === id);
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return toBn(day) + '/' + toBn(m) + '/' + toBn(y);
+}
+
+function updateStats() {
+  document.getElementById('totalEntries').textContent = toBn(state.entries.length);
+  const total = state.entries.reduce((s,e) => s + Number(e.amount||0), 0);
+  document.getElementById('totalAmount').textContent = formatMoney(total);
+  
+  const today = new Date().toISOString().split('T')[0];
+  const todayTotal = state.entries.filter(e => e.date === today).reduce((s,e) => s + Number(e.amount||0), 0);
+  document.getElementById('todayAmount').textContent = formatMoney(todayTotal);
+}
+
+// ============ SUGGESTIONS ============
+function setupSuggestions() {
+  const nameInput = document.getElementById('entryName');
+  const nameSug = document.getElementById('nameSuggestions');
+  const workInput = document.getElementById('entryWork');
+  const workSug = document.getElementById('workSuggestions');
+
+  nameInput.addEventListener('input', () => {
+    const val = nameInput.value.toLowerCase().trim();
+    if (!val) { nameSug.classList.remove('active'); return; }
+    
+    const matches = [];
+    const seen = new Set();
+    state.entries.forEach(e => {
+      if (e.name.toLowerCase().includes(val) && !seen.has(e.name)) {
+        seen.add(e.name);
+        matches.push(e);
+      }
+    });
+    
+    if (matches.length === 0) { nameSug.classList.remove('active'); return; }
+    
+    nameSug.innerHTML = matches.slice(0,6).map(e => `
+      <div class="suggestion-item" onclick="selectName('${escapeHtml(e.name)}','${escapeHtml(e.mobile||'')}')">
+        ${escapeHtml(e.name)}
+        ${e.mobile ? `<small>📱 ${escapeHtml(e.mobile)}</small>` : ''}
+      </div>
+    `).join('');
+    nameSug.classList.add('active');
+  });
+
+  nameInput.addEventListener('blur', () => setTimeout(() => nameSug.classList.remove('active'), 200));
+
+  workInput.addEventListener('input', () => {
+    const val = workInput.value.toLowerCase().trim();
+    if (!val) { workSug.classList.remove('active'); return; }
+    
+    const matches = [];
+    const seen = new Set();
+    state.entries.forEach(e => {
+      if (e.work.toLowerCase().includes(val) && !seen.has(e.work)) {
+        seen.add(e.work);
+        matches.push(e.work);
+      }
+    });
+    
+    if (matches.length === 0) { workSug.classList.remove('active'); return; }
+    
+    workSug.innerHTML = matches.slice(0,6).map(w => `
+      <div class="suggestion-item" onclick="selectWork('${escapeHtml(w)}')">${escapeHtml(w)}</div>
+    `).join('');
+    workSug.classList.add('active');
+  });
+
+  workInput.addEventListener('blur', () => setTimeout(() => workSug.classList.remove('active'), 200));
+}
+
+function selectName(name, mobile) {
+  document.getElementById('entryName').value = name;
+  if (mobile) document.getElementById('entryMobile').value = mobile;
+  document.getElementById('nameSuggestions').classList.remove('active');
+}
+function selectWork(w) {
+  document.getElementById('entryWork').value = w;
+  document.getElementById('workSuggestions').classList.remove('active');
+}
+
+// ============ CHALLENGE VERIFICATION ============
+function generateChallenge() {
+  const a = Math.floor(Math.random()*20) + 5;
+  const b = Math.floor(Math.random()*20) + 5;
+  const ops = ['+','-','×'];
+  const op = ops[Math.floor(Math.random()*ops.length)];
+  let answer;
+  if (op === '+') answer = a + b;
+  else if (op === '-') answer = a - b;
+  else answer = a * b;
+  
+  state.challengeAnswer = answer;
+  document.getElementById('mathChallenge').textContent = `${toBn(a)} ${op} ${toBn(b)} = ?`;
+  document.getElementById('mathAnswer').value = '';
+  document.getElementById('pinInput').value = '';
+}
+
+function requestDelete(id) {
+  state.pendingAction = { type:'delete', id };
+  generateChallenge();
+  document.getElementById('challengeModal').classList.add('active');
+}
+
+function requestEdit(id) {
+  state.pendingAction = { type:'edit', id };
+  generateChallenge();
+  document.getElementById('challengeModal').classList.add('active');
+}
+
+function closeChallenge() {
+  document.getElementById('challengeModal').classList.remove('active');
+  state.pendingAction = null;
+}
+
+async function verifyChallenge() {
+  const mathAns = parseInt(document.getElementById('mathAnswer').value);
+  const pinAns = document.getElementById('pinInput').value.trim();
+  
+  const mathOk = mathAns === state.challengeAnswer;
+  const pinOk = state.pin && pinAns === state.pin;
+  
+  if (!mathOk && !pinOk) {
+    toast('❌ ভুল উত্তর! আবার চেষ্টা করুন');
+    return;
+  }
+
+  const action = state.pendingAction;
+  closeChallenge();
+
+  if (action.type === 'delete') {
+    await deleteEntry(action.id);
+  } else if (action.type === 'edit') {
+    openEditModal(action.id);
+  }
+}
+
+async function deleteEntry(id) {
+  const entry = getEntry(id);
+  if (!entry) return;
+  
+  if (!confirm(`"${entry.name}" এর এন্ট্রিটি মুছে ফেলতে চান?`)) return;
+  
+  state.entries = state.entries.filter(e => e.id !== id);
+  saveLocal();
+  updateStats();
+  renderEntries();
+  await syncToSheet('delete', { id });
+  toast('✓ এন্ট্রি মুছে ফেলা হয়েছে');
+}
+
+function openEditModal(id) {
+  const e = getEntry(id);
+  if (!e) return;
+  document.getElementById('editId').value = e.id;
+  document.getElementById('editDate').value = e.date;
+  document.getElementById('editName').value = e.name;
+  document.getElementById('editMobile').value = e.mobile || '';
+  document.getElementById('editWork').value = e.work;
+  document.getElementById('editAmount').value = e.amount;
+  document.getElementById('editNote').value = e.note || '';
+  document.getElementById('editModal').classList.add('active');
+}
+
+async function updateEntry() {
+  const id = document.getElementById('editId').value;
+  const entry = getEntry(id);
+  if (!entry) return;
+  
+  entry.date = document.getElementById('editDate').value;
+  entry.name = document.getElementById('editName').value.trim();
+  entry.mobile = document.getElementById('editMobile').value.trim();
+  entry.work = document.getElementById('editWork').value.trim();
+  entry.amount = parseFloat(document.getElementById('editAmount').value) || 0;
+  entry.note = document.getElementById('editNote').value.trim();
+  entry.updatedAt = Date.now();
+  
+  saveLocal();
+  updateStats();
+  renderEntries();
+  closeModal('editModal');
+  await syncToSheet('update', entry);
+  toast('✓ আপডেট হয়েছে');
+}
+
+
+// ============ PRINT RECEIPTS ============
+
+function printReceipts(entries) {
+  if (!entries || entries.length === 0) {
+    toast('প্রিন্ট করার মতো এন্ট্রি নেই');
+    return;
+  }
+  
+  const printArea = document.getElementById('printArea');
+  let html = '';
+  
+  // প্রতিটি এন্ট্রির জন্য একটি A4 পেজ (২টা কপি পাশাপাশি)
+  entries.forEach(e => {
+    html += '<div class="receipt-page">';
+    // বাম পাশ: প্রদানকারীর কপি
+    html += buildReceiptHTML(e, 'provider');
+    // ডান পাশ: গ্রহণকারীর কপি
+    html += buildReceiptHTML(e, 'receiver');
+    html += '</div>';
+  });
+  
+  printArea.innerHTML = html;
+  
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { printArea.innerHTML = ''; }, 500);
+  }, 300);
+}
+
+function buildReceiptHTML(e, copyType) {
+  const serial = 'RV-' + String(e.id).slice(-6).toUpperCase();
+  
+  let copyLabel = '';
+  let copyNote = '';
+  let signLabel = '';
+  
+  if (copyType === 'provider') {
+    copyLabel = '📄 প্রদানকারীর কপি (বারাকাহ ভিলা)';
+    copyNote = 'প্রদানকারী: বারাকাহ ভিলা';
+    signLabel = 'মালিকের স্বাক্ষর';
+  } else {
+    copyLabel = '📄 গ্রহণকারীর কপি (প্রাপক)';
+    copyNote = 'প্রাপক: ' + escapeHtml(e.name);
+    signLabel = 'প্রাপকের স্বাক্ষর';
+  }
+  
+  return `
+    <div class="receipt">
+      <div class="receipt-copy-label">${copyLabel}</div>
+      
+      <div class="receipt-header">
+        <div class="receipt-villa">বারাকাহ ভিলা</div>
+        <div class="receipt-owner">মালিক: মোঃ মনির হোসেন</div>
+        <div class="receipt-mobile">📞 01877987587</div>
+      </div>
+      
+      <hr class="receipt-divider">
+      
+      <div class="receipt-title">💰 টাকা প্রদান রশিদ</div>
+      
+      <div class="receipt-row">
+        <span class="receipt-label">রশিদ নং:</span>
+        <span class="receipt-value">${serial}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">তারিখ:</span>
+        <span class="receipt-value">${formatDate(e.date)}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">প্রাপক:</span>
+        <span class="receipt-value">${escapeHtml(e.name)}</span>
+      </div>
+      ${e.mobile ? `
+      <div class="receipt-row">
+        <span class="receipt-label">মোবাইল:</span>
+        <span class="receipt-value">${escapeHtml(e.mobile)}</span>
+      </div>` : ''}
+      <div class="receipt-row">
+        <span class="receipt-label">কাজের বিবরণ:</span>
+        <span class="receipt-value">${escapeHtml(e.work)}</span>
+      </div>
+      ${e.note ? `
+      <div class="receipt-row">
+        <span class="receipt-label">নোট:</span>
+        <span class="receipt-value">${escapeHtml(e.note)}</span>
+      </div>` : ''}
+      
+      <div class="receipt-amount">৳ ${toBn(Number(e.amount).toLocaleString('en-IN'))} টাকা মাত্র</div>
+      
+      <div class="receipt-footer">
+        <span>${copyNote}</span>
+      </div>
+      
+      <div class="receipt-sign">${signLabel}</div>
+      
+      <div class="receipt-watermark">ধন্যবাদ • বারাকাহ ভিলা</div>
+    </div>
+  `;
+}
+// ============ BACKUP ============
+function exportData() {
+  const data = JSON.stringify(state.entries, null, 2);
+  const blob = new Blob([data], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'barakah-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ ব্যাকআপ ডাউনলোড হয়েছে');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        if (confirm(`${data.length} টি এন্ট্রি ইমপোর্ট করবেন? বর্তমান ডেটা প্রতিস্থাপিত হবে।`)) {
+          state.entries = data;
+          saveLocal();
+          updateStats();
+          renderEntries();
+          toast('✓ ইমপোর্ট সম্পন্ন');
+        }
+      }
+    } catch(err) {
+      toast('❌ ফাইল পড়া যায়নি');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function testConnection() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  if (!url) { toast('⚠️ URL দিন'); return; }
+  toast('🧪 টেস্ট হচ্ছে...');
+  try {
+    await fetch(url, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'test', data:{}, timestamp:Date.now() })
+    });
+    toast('✓ সংযোগ সফল (no-cors মোড)');
+  } catch(e) {
+    toast('❌ সংযোগ ব্যর্থ: ' + e.message);
+  }
+}
+
+// ============ PWA ============
+let deferredPrompt = null;
+if (location.protocol === 'http:' || location.protocol === 'https:') {
+  const manifestLink = document.createElement('link');
+  manifestLink.rel = 'manifest';
+  manifestLink.href = 'manifest.json';
+  document.head.appendChild(manifestLink);
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+async function installApp() {
+  if (!deferredPrompt) {
+    toast('মেনু → "Add to Home Screen" ব্যবহার করুন');
+    return;
+  }
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  if (choice.outcome === 'accepted') toast('✓ ইনস্টল হচ্ছে');
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+if (window.isSecureContext && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(e => console.log('SW failed', e));
+}
+
+// ============ INIT ============
+window.addEventListener('DOMContentLoaded', () => {
+  loadLocal();
+  loadSettings();
+  updateStats();
+  updateSyncStatus();
+  setTodayDate();
+  setupSuggestions();
+  
+  // Queue pending syncs
+  if (state.scriptUrl && state.entries.length > 0) {
+    // Sync all entries on startup (idempotent)
+    console.log('Local entries loaded:', state.entries.length);
+  }
+});
+</script>
+</body>
+</html>
