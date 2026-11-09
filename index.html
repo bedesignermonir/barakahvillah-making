@@ -351,7 +351,7 @@ body {
     <div class="card">
       <div class="card-title">ℹ️ অ্যাপ সম্পর্কে</div>
       <p style="font-size:13px;color:var(--muted);line-height:1.6">
-        বারাকাহ ভিলা হিসাব অ্যাপ v2.2<br>
+        বারাকাহ ভিলা হিসাব অ্যাপ v2.3<br>
         ফায়ারবেস ক্লাউড ডাটাবেস ও অথেন্টিকেশন সংযুক্ত।
       </p>
     </div>
@@ -470,12 +470,10 @@ window.closeModal = function(id) {
   document.getElementById(id).classList.remove('active');
 }
 
-// Handle Redirect Result for Mobile/Popup Blocked browsers
 getRedirectResult(auth).catch((error) => {
   console.error("Redirect login error:", error);
 });
 
-// Auth State
 onAuthStateChanged(auth, user => {
   const authModal = document.getElementById('authModal');
   if (user) {
@@ -554,7 +552,11 @@ window.updateUserPassword = async function() {
     toast('✓ সফলভাবে পাসওয়ার্ড সেট/পরিবর্তন করা হয়েছে');
     document.getElementById('newPasswordInput').value = '';
   } catch (e) {
-    toast('❌ পাসওয়ার্ড পরিবর্তন ব্যর্থ: ' + e.message);
+    if (e.code === 'auth/requires-recent-login') {
+      toast('❌ নিরাপত্তার জন্য পুনরায় লগইন করে পাসওয়ার্ড পরিবর্তন করুন');
+    } else {
+      toast('❌ পাসওয়ার্ড পরিবর্তন ব্যর্থ: ' + e.message);
+    }
   }
 };
 
@@ -570,7 +572,7 @@ function initRealtimeSync() {
     renderEntries();
   }, (error) => {
     console.error("Firestore error: ", error);
-    toast('⚠️ ডাটাবেস সিঙ্ক ত্রুটি (Firestore API চালু করুন)');
+    toast('⚠️ ডাটাবেস সিঙ্ক ত্রুটি। ফায়ারস্টোর রুলস চেক করুন');
   });
 }
 
