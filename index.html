@@ -239,7 +239,7 @@ body {
         <label class="form-label">🔑 পাসওয়ার্ড</label>
         <input type="password" class="form-input" id="authPassword" placeholder="••••••••">
       </div>
-      <button class="btn btn-primary" onclick="handleEmailLogin()">🔑 ইমেইল দিয়ে লগইন</button>
+      <button class="btn btn-primary" onclick="handleEmailLogin()">🔑 ইমেইল দিয়ে লগইন / সাইনআপ</button>
       <button class="btn btn-google" onclick="handleGoogleLogin()">
         <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.2v3.15C3.18 21.31 7.23 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.2C.44 8.12 0 9.87 0 12s.44 3.88 1.2 5.42l4.08-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.18 2.69 1.2 6.58l4.08 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
         গুগল দিয়ে লগইন করুন
@@ -325,6 +325,15 @@ body {
   <!-- ========== SETTINGS PAGE ========== -->
   <div class="page" id="page-settings">
     <div class="card">
+      <div class="card-title">🔑 পাসওয়ার্ড পরিবর্তন বা সেট করুন</div>
+      <div class="form-group">
+        <label class="form-label">নতুন পাসওয়ার্ড দিন</label>
+        <input type="password" class="form-input" id="newPasswordInput" placeholder="কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড">
+      </div>
+      <button class="btn btn-primary" onclick="updateUserPassword()">🔒 পাসওয়ার্ড সেভ/পরিবর্তন করুন</button>
+    </div>
+
+    <div class="card">
       <div class="card-title">📥 ফাইল ডাউনলোড</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:12px">আপনার সকল হিসাবের ডেটা এক্সেলে (CSV) অথবা সরাসরি ব্যাকআপ হিসেবে ডাউনলোড করুন।</p>
       <div class="btn-row">
@@ -342,7 +351,7 @@ body {
     <div class="card">
       <div class="card-title">ℹ️ অ্যাপ সম্পর্কে</div>
       <p style="font-size:13px;color:var(--muted);line-height:1.6">
-        বারাকাহ ভিলা হিসাব অ্যাপ v2.0<br>
+        বারাকাহ ভিলা হিসাব অ্যাপ v2.1<br>
         ফায়ারবেস ক্লাউড ডাটাবেস ও অথেন্টিকেশন সংযুক্ত।
       </p>
     </div>
@@ -409,8 +418,9 @@ body {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 import { 
-  getAuth, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, 
-  signOut, onAuthStateChanged 
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+  signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, 
+  signOut, onAuthStateChanged, updatePassword 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, 
@@ -487,15 +497,28 @@ onAuthStateChanged(auth, user => {
   }
 });
 
+// Auto SignUp if email doesn't exist during Email Login
 window.handleEmailLogin = async function() {
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
   if (!email || !password) { toast('ইমেইল ও পাসওয়ার্ড দিন'); return; }
+  
   try {
+    // Try to login first
     await signInWithEmailAndPassword(auth, email, password);
     toast('✓ সফলভাবে লগইন হয়েছে');
   } catch (e) {
-    toast('❌ লগইন ব্যর্থ: ' + e.message);
+    // If user not found, automatically create account with this email & password
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        toast('✓ নতুন অ্যাকাউন্ট তৈরি ও লগইন সফল');
+      } catch (createErr) {
+        toast('❌ ত্রুটি: ' + createErr.message);
+      }
+    } else {
+      toast('❌ লগইন ব্যর্থ: ' + e.message);
+    }
   }
 };
 
@@ -505,7 +528,6 @@ window.handleGoogleLogin = async function() {
     await signInWithPopup(auth, provider);
     toast('✓ গুগল দিয়ে লগইন সফল');
   } catch (e) {
-    // If popup is blocked or fails, fallback to redirect method automatically
     try {
       await signInWithRedirect(auth, provider);
     } catch (redirectErr) {
@@ -517,6 +539,27 @@ window.handleGoogleLogin = async function() {
 window.handleLogout = async function() {
   await signOut(auth);
   toast('লগআউট হয়েছে');
+};
+
+// Update/Set Password in Settings Page
+window.updateUserPassword = async function() {
+  const newPass = document.getElementById('newPasswordInput').value;
+  if (!newPass || newPass.length < 6) {
+    toast('⚠️ পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে');
+    return;
+  }
+  const user = auth.currentUser;
+  if (!user) {
+    toast('⚠️ কোনো ব্যবহারকারী লগইন করা নেই');
+    return;
+  }
+  try {
+    await updatePassword(user, newPass);
+    toast('✓ সফলভাবে পাসওয়ার্ড সেট/পরিবর্তন করা হয়েছে');
+    document.getElementById('newPasswordInput').value = '';
+  } catch (e) {
+    toast('❌ পাসওয়ার্ড পরিবর্তন ব্যর্থ: ' + e.message);
+  }
 };
 
 // Firestore Sync
