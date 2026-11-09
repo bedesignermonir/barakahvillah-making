@@ -106,7 +106,7 @@ body {
 .btn-success { background:var(--success); color:white; }
 .btn-danger { background:var(--danger); color:white; }
 .btn-secondary { background:#e5e7eb; color:var(--text); }
-.btn-google { background:#white; color:#374151; border:2px solid var(--border); width:100%; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:600; }
+.btn-google { background:#ffffff; color:#374151; border:2px solid var(--border); width:100%; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:600; cursor:pointer; }
 
 .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
 
@@ -164,12 +164,6 @@ body {
   max-width:400px; width:100%; max-height:90vh; overflow-y:auto;
 }
 .modal-title { font-size:18px; font-weight:700; margin-bottom:12px; color:var(--primary); }
-
-.challenge-box {
-  background:linear-gradient(135deg,#fef3c7,#fde68a);
-  padding:16px; border-radius:12px; margin:12px 0; text-align:center;
-}
-.challenge-q { font-size:18px; font-weight:700; color:#78350f; margin-bottom:8px; }
 
 .toast {
   position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
@@ -332,7 +326,7 @@ body {
   <div class="page" id="page-settings">
     <div class="card">
       <div class="card-title">📥 ফাইল ডাউনলোড</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">আপনার সকল হিসাবের ডেটা এক্সেলে (CSV) অথবা সরাসরি গুগল শিটে দেখতে এক্সপোর্ট করুন।</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">আপনার সকল হিসাবের ডেটা এক্সেলে (CSV) অথবা সরাসরি ব্যাকআপ হিসেবে ডাউনলোড করুন।</p>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="downloadCSV()">📊 এক্সেল (CSV)</button>
         <button class="btn btn-success" onclick="exportData()">📥 ব্যাকআপ (JSON)</button>
@@ -415,12 +409,12 @@ body {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 import { 
-  getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, 
+  getAuth, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, 
   signOut, onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, 
-  setDoc, onSnapshot, query, orderBy 
+  setDoc, onSnapshot, query 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -466,6 +460,11 @@ window.closeModal = function(id) {
   document.getElementById(id).classList.remove('active');
 }
 
+// Handle Redirect Result for Mobile/Popup Blocked browsers
+getRedirectResult(auth).catch((error) => {
+  console.error("Redirect login error:", error);
+});
+
 // Auth State
 onAuthStateChanged(auth, user => {
   const authModal = document.getElementById('authModal');
@@ -506,7 +505,12 @@ window.handleGoogleLogin = async function() {
     await signInWithPopup(auth, provider);
     toast('✓ গুগল দিয়ে লগইন সফল');
   } catch (e) {
-    toast('❌ গুগল লগইন ব্যর্থ: ' + e.message);
+    // If popup is blocked or fails, fallback to redirect method automatically
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (redirectErr) {
+      toast('❌ গুগল লগইন ব্যর্থ: ' + redirectErr.message);
+    }
   }
 };
 
@@ -523,7 +527,6 @@ function initRealtimeSync() {
     snapshot.forEach((docSnap) => {
       state.entries.push({ firebaseId: docSnap.id, ...docSnap.data() });
     });
-    // Sort by date/createdAt desc
     state.entries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     updateStats();
     renderEntries();
