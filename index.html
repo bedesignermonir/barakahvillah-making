@@ -351,7 +351,7 @@ body {
     <div class="card">
       <div class="card-title">ℹ️ অ্যাপ সম্পর্কে</div>
       <p style="font-size:13px;color:var(--muted);line-height:1.6">
-        বারাকাহ ভিলা হিসাব অ্যাপ v2.1<br>
+        বারাকাহ ভিলা হিসাব অ্যাপ v2.2<br>
         ফায়ারবেস ক্লাউড ডাটাবেস ও অথেন্টিকেশন সংযুক্ত।
       </p>
     </div>
@@ -497,18 +497,15 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-// Auto SignUp if email doesn't exist during Email Login
 window.handleEmailLogin = async function() {
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
   if (!email || !password) { toast('ইমেইল ও পাসওয়ার্ড দিন'); return; }
   
   try {
-    // Try to login first
     await signInWithEmailAndPassword(auth, email, password);
     toast('✓ সফলভাবে লগইন হয়েছে');
   } catch (e) {
-    // If user not found, automatically create account with this email & password
     if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
       try {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -541,7 +538,6 @@ window.handleLogout = async function() {
   toast('লগআউট হয়েছে');
 };
 
-// Update/Set Password in Settings Page
 window.updateUserPassword = async function() {
   const newPass = document.getElementById('newPasswordInput').value;
   if (!newPass || newPass.length < 6) {
@@ -562,7 +558,6 @@ window.updateUserPassword = async function() {
   }
 };
 
-// Firestore Sync
 function initRealtimeSync() {
   const q = query(collection(db, "entries"));
   onSnapshot(q, (snapshot) => {
@@ -575,6 +570,7 @@ function initRealtimeSync() {
     renderEntries();
   }, (error) => {
     console.error("Firestore error: ", error);
+    toast('⚠️ ডাটাবেস সিঙ্ক ত্রুটি (Firestore API চালু করুন)');
   });
 }
 
