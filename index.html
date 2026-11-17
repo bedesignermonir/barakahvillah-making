@@ -130,6 +130,55 @@ body {
 .entry-actions .del-btn { background:#fee2e2; color:#991b1b; }
 .entry-actions .print-btn { background:#d1fae5; color:#065f46; }
 
+/* ===== Account ledger (grouped by name) ===== */
+.ledger-item {
+  background:white; border-radius:12px; border-left:4px solid var(--primary);
+  box-shadow:0 1px 4px rgba(0,0,0,0.05); overflow:hidden;
+}
+.ledger-head { display:flex; align-items:center; gap:10px; padding:12px; cursor:pointer; }
+.ledger-avatar {
+  width:40px; height:40px; border-radius:50%; background:var(--bg);
+  color:var(--primary); font-weight:700; font-size:17px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; border:2px solid #ccfbf1;
+}
+.ledger-main { flex:1; min-width:0; }
+.ledger-name {
+  font-weight:700; font-size:15px; color:var(--text);
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.ledger-count {
+  font-size:11px; font-weight:600; color:var(--primary);
+  background:var(--bg); padding:1px 7px; border-radius:10px;
+}
+.ledger-sub {
+  font-size:12px; color:var(--muted); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ledger-total { font-weight:700; color:var(--primary); font-size:16px; white-space:nowrap; text-align:right; }
+.ledger-chevron { color:var(--muted); font-size:12px; transition:transform 0.2s; }
+.ledger-head.open .ledger-chevron { transform:rotate(180deg); }
+.ledger-detail {
+  display:none; border-top:1px dashed var(--border);
+  padding:10px 12px 12px; background:#fbfefd;
+}
+.ledger-detail.open { display:block; }
+.ledger-summary {
+  display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+  font-size:12px; font-weight:600; color:var(--primary-dark);
+  background:var(--bg); border-radius:8px; padding:8px 10px; margin-bottom:8px;
+}
+.txn-list { display:flex; flex-direction:column; gap:8px; }
+.txn-item { background:white; border:1px solid var(--border); border-radius:10px; padding:10px; }
+.txn-top { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+.txn-work { font-size:13px; font-weight:600; color:var(--text); }
+.txn-amount { font-size:14px; font-weight:700; color:var(--primary); white-space:nowrap; }
+.txn-meta { display:flex; flex-wrap:wrap; gap:10px; font-size:11px; color:var(--muted); margin-top:4px; }
+.txn-note {
+  font-size:12px; color:var(--muted); background:var(--bg);
+  border-left:3px solid #a7f3d0; border-radius:6px; padding:6px 8px; margin-top:6px;
+}
+.txn-actions { margin-top:6px; justify-content:flex-end; }
+
 .filter-bar { display:flex; gap:8px; margin-bottom:12px; }
 .filter-bar input { flex:1; padding:10px; border:2px solid var(--border); border-radius:10px; font-family:inherit; font-size:14px; }
 
@@ -444,7 +493,8 @@ const db = getFirestore(app);
 
 let state = {
   entries: [],
-  currentUser: null
+  currentUser: null,
+  expandedGroups: new Set()
 };
 
 window.toBn = n => String(n).replace(/\d/g, d => '০১২৩৪৫৬৭৮৯'[d]);
@@ -735,44 +785,130 @@ function updateStats() {
   document.getElementById('todayAmount').textContent = window.formatMoney(todayTotal);
 }
 
+function groupEntries(entries) {
+  const map = new Map();
+
+  entries.forEach(e => {
+    const name = String(e.name || '').trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (!map.has(key)) {
+      map.set(key, { key, name, mobile: '', entries: [], total: 0, latest: 0, lastDate: '' });
+    }
+    const group = map.get(key);
+    const createdAt = Number(e.createdAt || 0);
+    group.entries.push(e);
+    group.total += Number(e.amount || 0);
+    if (createdAt >= group.latest) {
+      group.latest = createdAt;
+      group.name = name;
+      group.lastDate = e.date || group.lastDate;
+      if (e.mobile) group.mobile = String(e.mobile).trim();
+    } else if (!group.mobile && e.mobile) {
+      group.mobile = String(e.mobile).trim();
+    }
+  });
+
+  const groups = Array.from(map.values());
+  groups.forEach(g => {
+    g.entries.sort((a, b) => {
+      const byDate = String(b.date || '').localeCompare(String(a.date || ''));
+      return byDate || (Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    });
+  });
+  groups.sort((a, b) => (b.latest - a.latest) || a.name.localeCompare(b.name));
+  return groups;
+}
+
+function entryNameKey(e) {
+  return String(e.name || '').trim().toLowerCase();
+}
+
+let ledgerGroups = [];
+
+window.toggleLedger = function(index) {
+  const group = ledgerGroups[index];
+  if (!group) return;
+  if (state.expandedGroups.has(group.key)) {
+    state.expandedGroups.delete(group.key);
+  } else {
+    state.expandedGroups.add(group.key);
+  }
+  renderEntries();
+};
+
 function renderEntries() {
   const list = document.getElementById('entryList');
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+
+  // সার্চ করলে যে ব্যক্তি/কাজ মিলে তাকে খুঁজে বের করে তার সব লেনদেন দেখানো হয়
   let filtered = state.entries;
   if (search) {
-    filtered = state.entries.filter(e => 
-      e.name.toLowerCase().includes(search) ||
-      e.work.toLowerCase().includes(search) ||
-      (e.mobile||'').includes(search)
+    const matched = new Set(
+      state.entries
+        .filter(e =>
+          String(e.name || '').toLowerCase().includes(search) ||
+          String(e.work || '').toLowerCase().includes(search) ||
+          String(e.mobile || '').toLowerCase().includes(search)
+        )
+        .map(entryNameKey)
     );
+    filtered = state.entries.filter(e => matched.has(entryNameKey(e)));
   }
 
-  if (filtered.length === 0) {
+  ledgerGroups = groupEntries(filtered);
+
+  if (ledgerGroups.length === 0) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div>কোনো এন্ট্রি নেই</div></div>`;
     return;
   }
 
-  list.innerHTML = filtered.map(e => `
-    <div class="entry-item">
-      <div class="entry-header">
-        <div>
-          <div class="entry-name">${escapeHtml(e.name)}</div>
-          <div class="entry-work">🔨 ${escapeHtml(e.work)}</div>
-          ${e.mobile ? `<div class="entry-work">📱 ${escapeHtml(e.mobile)}</div>` : ''}
+  list.innerHTML = ledgerGroups.map((g, i) => {
+    const open = state.expandedGroups.has(g.key);
+    const initial = escapeHtml(g.name.charAt(0));
+    const count = window.toBn(g.entries.length);
+    const lastDate = g.lastDate ? ' · সর্বশেষ ' + formatDate(g.lastDate) : '';
+
+    const transactions = g.entries.map(e => `
+      <div class="txn-item">
+        <div class="txn-top">
+          <div class="txn-work">🔨 ${escapeHtml(e.work)}</div>
+          <div class="txn-amount">${window.formatMoney(e.amount)}</div>
         </div>
-        <div class="entry-amount">${window.formatMoney(e.amount)}</div>
-      </div>
-      <div class="entry-meta">
-        <span>📅 ${formatDate(e.date)}</span>
-        <div class="entry-actions">
-          <button class="print-btn" onclick="window.printSingle('${e.firebaseId}')">🖨️</button>
-          <button class="edit-btn" onclick="window.openEditModal('${e.firebaseId}')">✏️</button>
-          <button class="del-btn" onclick="window.deleteEntry('${e.firebaseId}')">🗑️</button>
+        <div class="txn-meta">
+          <span>📅 ${formatDate(e.date)}</span>
+          ${e.mobile ? `<span>📱 ${escapeHtml(e.mobile)}</span>` : ''}
+        </div>
+        ${e.note ? `<div class="txn-note">📝 ${escapeHtml(e.note)}</div>` : ''}
+        <div class="entry-actions txn-actions">
+          <button class="print-btn" onclick="event.stopPropagation(); window.printSingle('${e.firebaseId}')">🖨️</button>
+          <button class="edit-btn" onclick="event.stopPropagation(); window.openEditModal('${e.firebaseId}')">✏️</button>
+          <button class="del-btn" onclick="event.stopPropagation(); window.deleteEntry('${e.firebaseId}')">🗑️</button>
         </div>
       </div>
-    </div>
-  `).join('');
+    `).join('');
+
+    return `
+      <div class="ledger-item">
+        <div class="ledger-head${open ? ' open' : ''}" onclick="window.toggleLedger(${i})">
+          <div class="ledger-avatar">${initial}</div>
+          <div class="ledger-main">
+            <div class="ledger-name">${escapeHtml(g.name)}<span class="ledger-count">${count} টি</span></div>
+            <div class="ledger-sub">${g.mobile ? '📱 ' + escapeHtml(g.mobile) : '📱 নম্বর নেই'}${lastDate}</div>
+          </div>
+          <div class="ledger-total">${window.formatMoney(g.total)}</div>
+          <div class="ledger-chevron">▼</div>
+        </div>
+        <div class="ledger-detail${open ? ' open' : ''}">
+          <div class="ledger-summary">
+            <span>মোট লেনদেন: ${count} টি</span>
+            <span>সর্বমোট: ${window.formatMoney(g.total)}</span>
+          </div>
+          <div class="txn-list">${transactions}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function escapeHtml(s) {
