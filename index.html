@@ -587,8 +587,104 @@ window.resetForm = function() {
   document.getElementById('entryWork').value = '';
   document.getElementById('entryAmount').value = '';
   document.getElementById('entryNote').value = '';
+  hideSuggestions(document.getElementById('nameSuggestions'));
+  hideSuggestions(document.getElementById('workSuggestions'));
   window.setTodayDate();
 }
+
+/* ===== Auto-suggest (Name / Mobile / Work) ===== */
+function hideSuggestions(box) {
+  if (!box) return;
+  box.classList.remove('active');
+  box.innerHTML = '';
+}
+
+// পুরোনো এন্ট্রি থেকে ইউনিক নাম/কাজের তালিকা (সর্বশেষ এন্ট্রি আগে)
+function uniquePrevious(field) {
+  const seen = new Set();
+  const list = [];
+  state.entries.forEach(e => {
+    const value = String(e[field] || '').trim();
+    if (!value) return;
+    const key = value.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    list.push({ value, entry: e });
+  });
+  return list;
+}
+
+function showSuggestions(box, items, onPick) {
+  box.innerHTML = '';
+  if (!items.length) { hideSuggestions(box); return; }
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'suggestion-item';
+    row.appendChild(document.createTextNode(item.value));
+    if (item.sub) {
+      const small = document.createElement('small');
+      small.textContent = item.sub;
+      row.appendChild(small);
+    }
+    // mousedown/pointerdown এ preventDefault করলে ইনপুট ফোকাস হারায় না
+    row.addEventListener('pointerdown', ev => ev.preventDefault());
+    row.addEventListener('click', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      onPick(item);
+      hideSuggestions(box);
+    });
+    box.appendChild(row);
+  });
+  box.classList.add('active');
+}
+
+window.initSuggestions = function() {
+  const nameInput = document.getElementById('entryName');
+  const nameBox = document.getElementById('nameSuggestions');
+  const mobileInput = document.getElementById('entryMobile');
+  const workInput = document.getElementById('entryWork');
+  const workBox = document.getElementById('workSuggestions');
+
+  // নাম টাইপ করলে আগের নামের সাজেশন দেখাবে
+  nameInput.addEventListener('input', () => {
+    const q = nameInput.value.trim().toLowerCase();
+    if (!q) { hideSuggestions(nameBox); return; }
+    const items = uniquePrevious('name')
+      .filter(it => it.value.toLowerCase().includes(q) && it.value.toLowerCase() !== q)
+      .slice(0, 8)
+      .map(it => ({
+        value: it.value,
+        mobile: String(it.entry.mobile || '').trim(),
+        sub: it.entry.mobile ? '📱 ' + it.entry.mobile : ''
+      }));
+    showSuggestions(nameBox, items, it => {
+      nameInput.value = it.value;
+      if (it.mobile) mobileInput.value = it.mobile;
+    });
+  });
+
+  // কাজের নাম টাইপ করলে আগের কাজের সাজেশন দেখাবে (নতুন কাজ লিখতেও পারবেন)
+  workInput.addEventListener('input', () => {
+    const q = workInput.value.trim().toLowerCase();
+    if (!q) { hideSuggestions(workBox); return; }
+    const items = uniquePrevious('work')
+      .filter(it => it.value.toLowerCase().includes(q) && it.value.toLowerCase() !== q)
+      .slice(0, 8)
+      .map(it => ({ value: it.value }));
+    showSuggestions(workBox, items, it => {
+      workInput.value = it.value;
+    });
+  });
+
+  // বাইরে ট্যাপ করলে বা Esc চাপলে ড্রপডাউন বন্ধ হবে
+  document.addEventListener('pointerdown', ev => {
+    if (!nameBox.contains(ev.target) && ev.target !== nameInput) hideSuggestions(nameBox);
+    if (!workBox.contains(ev.target) && ev.target !== workInput) hideSuggestions(workBox);
+  });
+  nameInput.addEventListener('keydown', ev => { if (ev.key === 'Escape') hideSuggestions(nameBox); });
+  workInput.addEventListener('keydown', ev => { if (ev.key === 'Escape') hideSuggestions(workBox); });
+};
 
 window.saveEntry = async function() {
   const date = document.getElementById('entryDate').value;
@@ -812,6 +908,7 @@ window.exportData = function() {
 
 window.addEventListener('DOMContentLoaded', () => {
   window.setTodayDate();
+  window.initSuggestions();
 });
 </script>
 </body>
